@@ -235,8 +235,21 @@ export default function AnimatedTranslationDiagram() {
             <text x="30" y="42" textAnchor="middle" fontSize="18" fill="var(--green)" fontWeight="bold">{trans.f}</text>
             
             <text x="90" y="18" textAnchor="middle" fontSize="10" fill="var(--text3)" fontWeight="bold">OFF (d)</text>
-            <text x="90" y="42" textAnchor="middle" fontSize="18" fill="var(--accent)" fontWeight="bold">{trans.d}</text>
+            <text x="90" y="42" textAnchor="middle" fontSize="18" fill={trans.d >= CFG.frameSize ? 'var(--red)' : 'var(--accent)'} fontWeight="bold">{trans.d}</text>
             <text x="60" y="-10" textAnchor="middle" fontSize="11" fill="var(--text2)" fontWeight="bold">PHYSICAL ADDRESS</text>
+            
+            {/* Calculation Callout */}
+            {isActive && (
+              <g transform="translate(0, 75)">
+                <rect x="0" y="0" width="120" height="30" rx="4" fill="var(--paper)" stroke="var(--border)" strokeWidth="1" />
+                <text x="60" y="20" textAnchor="middle" fontSize="10" fill="var(--text2)">
+                  ({trans.f} × {CFG.frameSize}) + {trans.d} = {trans.f * CFG.frameSize + trans.d}KB
+                </text>
+                {trans.d >= CFG.frameSize && (
+                  <text x="60" y="-5" textAnchor="middle" fontSize="9" fill="var(--red)" fontWeight="bold">⚡ BOUNDS ERROR</text>
+                )}
+              </g>
+            )}
           </g>
 
           {/* ---- ARROW: PHYSICAL to MEMORY ---- */}
@@ -256,7 +269,18 @@ export default function AnimatedTranslationDiagram() {
 
             {/* Current Target Highlight */}
             {isActive && typeof trans.f === 'number' && trans.f >= 0 && trans.f < numFrames && (
-              <rect x="2" y={trans.f * frameHeight + 1} width="56" height={frameHeight - 2} fill="var(--green)" opacity="0.4" className="fade-in" />
+              <g>
+                <rect x="2" y={trans.f * frameHeight + 1} width="56" height={frameHeight - 2} fill="var(--green)" opacity="0.1" />
+                {/* Offset Pointer within Frame */}
+                <rect 
+                  x="2" 
+                  y={trans.f * frameHeight + (trans.d / CFG.frameSize) * (frameHeight - 2)} 
+                  width="56" height="3" 
+                  fill="var(--green)" 
+                  className="pulse" 
+                />
+                <text x="-15" y={trans.f * frameHeight + (trans.d / CFG.frameSize) * (frameHeight - 2) + 4} textAnchor="end" fontSize="8" fill="var(--green)" fontWeight="bold">PTR</text>
+              </g>
             )}
             
             <text x="30" y="340" textAnchor="middle" fontSize="11" fill="var(--text3)" fontWeight="bold">PHYSICAL RAM</text>
