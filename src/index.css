@@ -420,3 +420,76 @@ label.lbl { font-size: 12px; font-weight: 500; color: var(--text2); display: blo
 
 /* PR step col highlight */
 .pr-col.current .pr-ref-label { transform: scale(1.05); box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+
+/* ---- SCHEMATIC ANIMATIONS ---- */
+@keyframes flowLine {
+  to { stroke-dashoffset: -20; }
+}
+@keyframes dataPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.5); opacity: 1; filter: brightness(1.2); }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+@keyframes highlightPT {
+  0% { transform: scale(1); background: transparent; }
+  50% { transform: scale(1.02); background: #eef2fc; box-shadow: 0 0 10px rgba(0,0,0,.05); }
+  100% { transform: scale(1); background: transparent; }
+}
+.flow-arrow {
+  stroke-dasharray: 5;
+  animation: flowLine 1s linear infinite;
+}
+.data-packet {
+  animation: dataPulse 1s ease-in-out infinite;
+}
+.pt-highlight {
+  animation: highlightPT 1.5s ease-in-out infinite;
+  border: 1px solid var(--accent) !important;
+}
+/* ---- PAGING EXPLORER 2.0 STYLES ---- */
+.logical-page-box:hover {
+  transform: translateX(4px);
+  border-color: var(--amber) !important;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
+}
+
+.pt-row-interactive.active {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  z-index: 10;
+  border-left: 4px solid var(--accent);
+}
+
+.frame-box-styled {
+  background: white;
+}
+.frame-box-styled.owned {
+  border-color: var(--accent) !important;
+  background: #f0f7ff !important;
+}
+.frame-box-styled.highlight-hardware {
+  border-color: var(--green) !important;
+  background: var(--green-bg) !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(27,127,79,0.3);
+  z-index: 5;
+}
+
+@keyframes focusPulse {
+  0% { box-shadow: 0 0 0 0 rgba(59,111,212, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(59,111,212, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59,111,212, 0); }
+}
+.pulse-focus {
+  animation: focusPulse 2s infinite;
+  border-color: var(--accent) !important;
+}
+
+.paging-explorer-pipeline .card-header {
+  border-bottom: 2px solid var(--border);
+}
+
+/* Extra decorative glow for the schematic binary bits */
+.bin-bit-glow {
+  filter: drop-shadow(0 0 2px var(--accent));
+}

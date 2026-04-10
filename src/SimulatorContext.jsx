@@ -27,6 +27,26 @@ export const SimulatorProvider = ({ children }) => {
   const [sysLogs, setSysLogs] = useState([{ msg: '[SYS] MMU Simulator ready. Memory: 1024 KB, Frame size: 64 KB.', type: 'sys', time: new Date().toLocaleTimeString('en-US',{hour12:false}) }]);
   const [cmpLogs, setCmpLogs] = useState([]);
   const [prSessions, setPrSessions] = useState([]);
+  const [statsHistory, setStatsHistory] = useState([{ ts: 'Start', used: 0, free: 1024, extFrag: 0, intFrag: 0, util: 0, holeCount: 1 }]);
+
+  const snapStats = (currentMEM, currentCFG) => {
+    const used = currentMEM.segments.filter(s => !s.isHole).reduce((a, s) => a + s.size, 0);
+    const free = (currentCFG?.totalMem || CFG.totalMem) - used;
+    const holes = currentMEM.segments.filter(s => s.isHole).map(s => s.size);
+    const largestHole = holes.length ? Math.max(...holes) : 0;
+    const extFrag = free - largestHole;
+    const intFrag = currentMEM.processes.reduce((acc, p) => acc + ((p.frames.length * (currentCFG?.frameSize || CFG.frameSize)) - p.size), 0);
+    const util = Math.round((used / (currentCFG?.totalMem || CFG.totalMem)) * 100);
+
+    setStatsHistory(prev => {
+      const newSnap = { 
+        ts: new Date().toLocaleTimeString('en-US', { hour12: false }), 
+        used, free, extFrag, intFrag, util, holeCount: holes.length 
+      };
+      const hist = [...prev, newSnap];
+      return hist.slice(-30); // Keep last 30 snapshots
+    });
+  };
 
   const log = (msg, type = 'ok') => {
     setSysLogs(prev => [...prev, { msg: `[${new Date().toLocaleTimeString('en-US',{hour12:false})}] ${msg}`, type }]);
@@ -107,12 +127,14 @@ export const SimulatorProvider = ({ children }) => {
 
       log(`[OK] ${pid} (${size}KB) allocated @ ${hole.start}KB [${prev.allocAlgo.toUpperCase()} FIT]`, 'ok');
 
-      return {
+      const nextState = {
         ...prev,
         segments: segs,
         processes: [...prev.processes, { pid, size, start: hole.start, end: hole.start + size - 1, frames, color }],
         colorIdx: prev.colorIdx + 1
       };
+      snapStats(nextState, CFG);
+      return nextState;
     });
 
     return wasSwapped;
@@ -129,11 +151,13 @@ export const SimulatorProvider = ({ children }) => {
 
       log(`[OK] ${pid} freed. ${seg.size}KB released @ ${seg.start}KB.`, 'ok');
 
-      return {
+      const nextState = {
         ...prev,
         segments: newSegs,
         processes: prev.processes.filter(p => p.pid !== pid)
       };
+      snapStats(nextState, CFG);
+      return nextState;
     });
   };
 
@@ -158,11 +182,13 @@ export const SimulatorProvider = ({ children }) => {
         resetSegs = [{ pid: null, size: CFG.totalMem, start: 0, isHole: true, partId: 0 }];
       }
 
-      return {
+      const nextState = {
         ...prev,
         segments: resetSegs,
         processes: [],
       };
+      snapStats(nextState, CFG);
+      return nextState;
     });
     log('[SYS] All processes deallocated.', 'sys');
   };
@@ -191,13 +217,15 @@ export const SimulatorProvider = ({ children }) => {
     const tMem = memSize || 1024;
     const fSize = frameSize || 64;
     setCFG({ totalMem: tMem, frameSize: fSize });
-    setMEM({
+    const nextState = {
       segments: [{ pid: null, size: tMem, start: 0, isHole: true, partId: 0 }],
       processes: [],
       swapQueue: [],
       allocAlgo: 'first',
       colorIdx: 0,
-    });
+    };
+    setMEM(nextState);
+    snapStats(nextState, { totalMem: tMem, frameSize: fSize });
     setCOMPACT({ active: false, steps: [], stepIdx: 0 });
     log(`[SYS] Reset. Memory: ${tMem} KB, Frame: ${fSize} KB.`, 'sys');
   };
@@ -217,13 +245,15 @@ export const SimulatorProvider = ({ children }) => {
     const fSize = frameSize || 64;
 
     setCFG({ totalMem, frameSize: fSize });
-    setMEM({
+    const nextState = {
       segments: newSegments,
       processes: [],
       swapQueue: [],
       allocAlgo: 'first',
       colorIdx: 0,
-    });
+    };
+    setMEM(nextState);
+    snapStats(nextState, { totalMem, frameSize: fSize });
     setCOMPACT({ active: false, steps: [], stepIdx: 0 });
     log(`[SYS] Custom Layout initialized. ${newSegments.length} blocks. Total Memory: ${totalMem} KB.`, 'sys');
   };
@@ -258,7 +288,9 @@ export const SimulatorProvider = ({ children }) => {
         const seg = finalState.find(s => s.pid === proc.pid);
         return seg ? { ...proc, start: seg.start, end: seg.start + seg.size - 1, frames: getFrames(seg.start, seg.size) } : proc;
       });
-      return { ...prev, segments: JSON.parse(JSON.stringify(finalState)), processes: newProcs };
+      const nextState = { ...prev, segments: JSON.parse(JSON.stringify(finalState)), processes: newProcs };
+      snapStats(nextState, CFG);
+      return nextState;
     });
     setCOMPACT({ active: false, steps: [], stepIdx: 0 });
     log('[SYS] Memory compacted. All holes merged to one free block.', 'sys');
@@ -356,7 +388,7 @@ export const SimulatorProvider = ({ children }) => {
   return (
     <SimulatorContext.Provider value={{
       CFG, setCFG, MEM, setMEM, COMPACT, setCOMPACT, PR, setPR,
-      sysLogs, cmpLogs, prSessions,
+      sysLogs, cmpLogs, prSessions, statsHistory,
       allocProcess, deallocProcess, deallocAll, swapIn, swapOut, resetAll, initCustomBlocks, startCompaction, finishCompaction, runPR, stepPR, resetPR, clearCmpLog, log
     }}>
       {children}

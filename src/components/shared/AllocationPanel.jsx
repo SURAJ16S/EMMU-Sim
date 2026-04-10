@@ -6,9 +6,6 @@ export default function AllocationPanel() {
   
   const [pid, setPid] = useState('P1');
   const [size, setSize] = useState(128);
-  const [allocMode, setAllocMode] = useState('size');
-  const [numPages, setNumPages] = useState(2);
-  const [localPageSize, setLocalPageSize] = useState(CFG.frameSize || 64);
 
   const bumpPid = () => {
     const m = pid.match(/^([A-Za-z]+)(\d+)$/);
@@ -16,8 +13,7 @@ export default function AllocationPanel() {
   };
 
   const handleAlloc = () => {
-    const finalSize = allocMode === 'size' ? size : numPages * localPageSize;
-    const swapped = allocProcess(pid, finalSize);
+    const swapped = allocProcess(pid, size);
     if (!swapped) bumpPid();
   };
 
@@ -51,46 +47,10 @@ export default function AllocationPanel() {
               <input type="text" className="inp" value={pid} onChange={e => setPid(e.target.value)} maxLength="8" />
             </div>
             
-            <div style={{ display: 'flex', gap: '4px', background: 'var(--paper)', padding: '4px', border: '1px solid var(--border)', borderRadius: '6px' }}>
-              <button 
-                type="button"
-                className={`btn btn-sm ${allocMode === 'size' ? 'btn-primary' : 'btn-secondary'}`} 
-                style={{ flex: 1, padding: '4px' }} 
-                onClick={() => setAllocMode('size')}
-              >KB Size</button>
-              <button 
-                type="button"
-                className={`btn btn-sm ${allocMode === 'pages' ? 'btn-primary' : 'btn-secondary'}`} 
-                style={{ flex: 1, padding: '4px' }}
-                onClick={() => setAllocMode('pages')}
-              >Pages</button>
+            <div>
+              <label className="lbl">Process Size (KB)</label>
+              <input type="number" className="inp" value={size} onChange={e => setSize(parseInt(e.target.value) || 0)} min="1" />
             </div>
-
-            {allocMode === 'size' && (
-              <div>
-                <label className="lbl">Process Size (KB)</label>
-                <input type="number" className="inp" value={size} onChange={e => setSize(parseInt(e.target.value) || 0)} min="1" />
-              </div>
-            )}
-
-            {allocMode === 'pages' && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="lbl">Pages</label>
-                  <input type="number" className="inp" value={numPages} onChange={e => setNumPages(parseInt(e.target.value) || 1)} min="1" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label className="lbl">KB / Page</label>
-                  <input type="number" className="inp" value={localPageSize} onChange={e => setLocalPageSize(parseInt(e.target.value) || 1)} min="1" />
-                </div>
-              </div>
-            )}
-            
-            {allocMode === 'pages' && (
-              <div style={{ fontSize: '11px', color: 'var(--text2)', textAlign: 'right', marginTop: '-4px' }}>
-                Total: <strong>{numPages * localPageSize} KB</strong>
-              </div>
-            )}
 
             <button className="btn btn-primary" onClick={handleAlloc} style={{ justifyContent: 'center', marginTop: '4px' }}>+ Allocate</button>
           </div>

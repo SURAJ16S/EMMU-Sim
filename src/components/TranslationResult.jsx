@@ -25,9 +25,9 @@ export default function TranslationResult({ moduleName }) {
         }
       }
 
-      const bits = 10;
+      const bits = Math.ceil(Math.log2(CFG.totalMem));
       const binStr = logical.toString(2).padStart(bits, '0');
-      const offsetBits = Math.ceil(Math.log2(CFG.frameSize + 1));
+      const offsetBits = Math.ceil(Math.log2(CFG.frameSize));
       const pageBits = bits - offsetBits;
 
       const bitArr = binStr.split('').map((b, i) => ({ b, isPage: i < pageBits }));
