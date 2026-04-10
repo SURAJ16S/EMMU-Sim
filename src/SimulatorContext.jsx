@@ -43,12 +43,13 @@ export const SimulatorProvider = ({ children }) => {
   const coalesceHoles = (segments) => {
     let newSegs = [...segments];
     for (let i = 0; i < newSegs.length - 1; i++) {
-      if (newSegs[i].isHole && newSegs[i+1].isHole) {
+      if (newSegs[i].isHole && newSegs[i+1].isHole && newSegs[i].partId === newSegs[i+1].partId) {
         newSegs.splice(i, 2, {
           pid: null,
           size: newSegs[i].size + newSegs[i+1].size,
           start: newSegs[i].start,
           isHole: true,
+          partId: newSegs[i].partId
         });
         i--;
       }
@@ -70,29 +71,31 @@ export const SimulatorProvider = ({ children }) => {
     if (!size || size < 1) return log('[ERR] Size must be ≥ 1 KB.', 'err');
     if (MEM.processes.find(p => p.pid === pid)) return log(`[ERR] PID "${pid}" already exists.`, 'err');
 
-    const holeIdx = findHole(size, MEM.segments, MEM.allocAlgo);
-
-    if (holeIdx === -1) {
-      setMEM(prev => ({ ...prev, swapQueue: [...prev.swapQueue, { pid, size }] }));
-      log(`[SWAP] ${pid} (${size}KB) → No fitting hole. Added to Swap Queue.`, 'info');
-      return true; // Sent to swap
-    }
+    let wasSwapped = false;
 
     setMEM(prev => {
       const segs = [...prev.segments];
+      const holeIdx = findHole(size, segs, prev.allocAlgo);
+
+      if (holeIdx === -1) {
+        log(`[SWAP] ${pid} (${size}KB) → No fitting hole. Added to Swap Queue.`, 'info');
+        wasSwapped = true;
+        return { ...prev, swapQueue: [...prev.swapQueue, { pid, size }] };
+      }
+
       const hole = segs[holeIdx];
       const rem = hole.size - size;
       const color = COLORS[prev.colorIdx % COLORS.length];
 
       segs.splice(holeIdx, 1,
-        { pid, size, start: hole.start, isHole: false },
-        ...(rem > 0 ? [{ pid: null, size: rem, start: hole.start + size, isHole: true }] : [])
+        { pid, size, start: hole.start, isHole: false, partId: hole.partId },
+        ...(rem > 0 ? [{ pid: null, size: rem, start: hole.start + size, isHole: true, partId: hole.partId }] : [])
       );
 
       const frames = getFrames(hole.start, size, CFG.frameSize);
       
-      const newFreeKB = segs.filter(s=>s.isHole).reduce((a,s)=>a+s.size,0);
-      const newHolesCount = segs.filter(s=>s.isHole).length;
+      const newFreeKB = segs.filter(s => s.isHole).reduce((a, s) => a + s.size, 0);
+      const newHolesCount = segs.filter(s => s.isHole).length;
       
       setCmpLogs(cl => [...cl, {
         ts: new Date().toLocaleTimeString(),
@@ -111,7 +114,8 @@ export const SimulatorProvider = ({ children }) => {
         colorIdx: prev.colorIdx + 1
       };
     });
-    return false; // Not swapped
+
+    return wasSwapped;
   };
 
   const deallocProcess = (pid) => {
@@ -120,7 +124,7 @@ export const SimulatorProvider = ({ children }) => {
       if (idx === -1) return prev;
       const seg = prev.segments[idx];
       let newSegs = [...prev.segments];
-      newSegs[idx] = { pid: null, size: seg.size, start: seg.start, isHole: true };
+      newSegs[idx] = { pid: null, size: seg.size, start: seg.start, isHole: true, partId: seg.partId };
       newSegs = coalesceHoles(newSegs);
 
       log(`[OK] ${pid} freed. ${seg.size}KB released @ ${seg.start}KB.`, 'ok');
@@ -134,11 +138,32 @@ export const SimulatorProvider = ({ children }) => {
   };
 
   const deallocAll = () => {
-    setMEM(prev => ({
-      ...prev,
-      segments: [{ pid: null, size: CFG.totalMem, start: 0, isHole: true }],
-      processes: [],
-    }));
+    setMEM(prev => {
+      let resetSegs = [];
+      if (prev.segments.some(s => s.partId > 0)) {
+        // We have custom blocks. Restore them by extracting unique partIds mapped to their total capacity
+        let parts = {};
+        for (let s of prev.segments) {
+          if (!parts[s.partId]) parts[s.partId] = { size: 0, start: s.start };
+          parts[s.partId].size += s.size;
+        }
+        resetSegs = Object.keys(parts).sort((a,b) => parts[a].start - parts[b].start).map(pId => ({
+          pid: null,
+          size: parts[pId].size,
+          start: parts[pId].start,
+          isHole: true,
+          partId: parseInt(pId)
+        }));
+      } else {
+        resetSegs = [{ pid: null, size: CFG.totalMem, start: 0, isHole: true, partId: 0 }];
+      }
+
+      return {
+        ...prev,
+        segments: resetSegs,
+        processes: [],
+      };
+    });
     log('[SYS] All processes deallocated.', 'sys');
   };
 
@@ -167,7 +192,7 @@ export const SimulatorProvider = ({ children }) => {
     const fSize = frameSize || 64;
     setCFG({ totalMem: tMem, frameSize: fSize });
     setMEM({
-      segments: [{ pid: null, size: tMem, start: 0, isHole: true }],
+      segments: [{ pid: null, size: tMem, start: 0, isHole: true, partId: 0 }],
       processes: [],
       swapQueue: [],
       allocAlgo: 'first',
@@ -175,6 +200,32 @@ export const SimulatorProvider = ({ children }) => {
     });
     setCOMPACT({ active: false, steps: [], stepIdx: 0 });
     log(`[SYS] Reset. Memory: ${tMem} KB, Frame: ${fSize} KB.`, 'sys');
+  };
+
+  const initCustomBlocks = (sizesStr, frameSize) => {
+    const sizes = sizesStr.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s) && s > 0);
+    if (!sizes.length) return log('[ERR] Invalid custom blocks definition.', 'err');
+
+    let currentStart = 0;
+    const newSegments = sizes.map((size, idx) => {
+      const seg = { pid: null, size, start: currentStart, isHole: true, partId: idx + 1 };
+      currentStart += size;
+      return seg;
+    });
+
+    const totalMem = currentStart;
+    const fSize = frameSize || 64;
+
+    setCFG({ totalMem, frameSize: fSize });
+    setMEM({
+      segments: newSegments,
+      processes: [],
+      swapQueue: [],
+      allocAlgo: 'first',
+      colorIdx: 0,
+    });
+    setCOMPACT({ active: false, steps: [], stepIdx: 0 });
+    log(`[SYS] Custom Layout initialized. ${newSegments.length} blocks. Total Memory: ${totalMem} KB.`, 'sys');
   };
 
   // Compaction
@@ -306,7 +357,7 @@ export const SimulatorProvider = ({ children }) => {
     <SimulatorContext.Provider value={{
       CFG, setCFG, MEM, setMEM, COMPACT, setCOMPACT, PR, setPR,
       sysLogs, cmpLogs, prSessions,
-      allocProcess, deallocProcess, deallocAll, swapIn, swapOut, resetAll, startCompaction, finishCompaction, runPR, stepPR, resetPR, clearCmpLog, log
+      allocProcess, deallocProcess, deallocAll, swapIn, swapOut, resetAll, initCustomBlocks, startCompaction, finishCompaction, runPR, stepPR, resetPR, clearCmpLog, log
     }}>
       {children}
     </SimulatorContext.Provider>

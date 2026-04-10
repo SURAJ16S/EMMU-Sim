@@ -1,21 +1,21 @@
 import React from 'react';
-import PagingVisualizer from './shared/PagingVisualizer';
+import MemoryVisualizer from './shared/MemoryVisualizer';
 import ProcessVisualizer from './shared/ProcessVisualizer';
 import AllocationPanel from './shared/AllocationPanel';
 
-export default function PagingModule() {
+export default function ProcessModule() {
   return (
-    <section id="mod-paging" className="module-section active fade-in">
+    <section id="mod-process" className="module-section active fade-in">
       <div className="mod-split">
         <div className="mod-main">
           <div>
-            <h2 style={{ fontSize: '20px' }}>📄 Paging Explorer</h2>
+            <h2 style={{ fontSize: '20px' }}>⚙️ Process Management</h2>
             <p style={{ color: 'var(--text2)', fontSize: '13px', marginTop: '4px' }}>
-              Explore how processes are mapped into physical frames through page tables.
+              Monitor active processes, manage the swap queue, and perform manual memory operations.
             </p>
           </div>
           
-          <PagingVisualizer />
+          <MemoryVisualizer />
           <ProcessVisualizer />
         </div>
 
