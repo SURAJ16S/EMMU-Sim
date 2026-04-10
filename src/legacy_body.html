@@ -1,0 +1,420 @@
+<!-- ================================================================
+     SIDEBAR
+================================================================ -->
+<aside id="sidebar">
+  <!-- Branding -->
+  <div style="padding:18px 16px 14px; border-bottom:1px solid var(--border);">
+    <h1 style="font-size:20px; margin-bottom:2px;">MMU <span style="color:var(--accent);">Simulator</span></h1>
+    <p style="font-size:11px; color:var(--text3);">Memory Management Unit — OS Lab</p>
+  </div>
+
+  <!-- Module Navigation -->
+  <div class="module-nav" style="padding:12px;">
+    <p class="sb-label">Modules</p>
+    <button class="module-btn active" onclick="showModule('contiguous')" id="nav-contiguous">
+      <div class="module-icon" style="background:#eef2fc;">🧱</div>
+      Contiguous Allocation
+    </button>
+    <button class="module-btn" onclick="showModule('paging')" id="nav-paging">
+      <div class="module-icon" style="background:#fef3e2;">📄</div>
+      Paging &amp; Address Translation
+    </button>
+    <button class="module-btn" onclick="showModule('replacement')" id="nav-replacement">
+      <div class="module-icon" style="background:#e8f5ef;">🔄</div>
+      Page Replacement
+    </button>
+    <button class="module-btn" onclick="showModule('analytics')" id="nav-analytics">
+      <div class="module-icon" style="background:#fdecea;">📊</div>
+      Analytics &amp; Reports
+    </button>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- System Config -->
+  <div class="sb-section">
+    <p class="sb-label">System Configuration</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label class="lbl">Total Memory (KB)</label>
+        <input type="number" class="inp" id="cfg-mem" value="1024" min="64" max="8192"/>
+      </div>
+      <div>
+        <label class="lbl">Frame / Page Size (KB)</label>
+        <input type="number" class="inp" id="cfg-frame" value="64" min="4" max="512"/>
+      </div>
+      <button class="btn btn-secondary" onclick="resetAll()" style="width:100%; justify-content:center;">↺ Reset Everything</button>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- Allocation Config (shown only for contiguous module) -->
+  <div class="sb-section" id="sb-alloc">
+    <p class="sb-label">Allocation Algorithm</p>
+    <div class="algo-tabs" id="alloc-tabs">
+      <div class="algo-tab active" data-val="first"  onclick="setAllocAlgo(this)">First</div>
+      <div class="algo-tab"        data-val="best"   onclick="setAllocAlgo(this)">Best</div>
+      <div class="algo-tab"        data-val="worst"  onclick="setAllocAlgo(this)">Worst</div>
+    </div>
+    <p id="algo-hint" style="font-size:11px; color:var(--text3); margin-top:8px;">
+      Allocate to the <strong>first</strong> hole that fits.
+    </p>
+    <hr class="divider" style="margin:12px 0;"/>
+    <p class="sb-label">Allocate Process</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div>
+        <label class="lbl">Process ID</label>
+        <input type="text" class="inp" id="inp-pid" value="P1" maxlength="8"/>
+      </div>
+      <div>
+        <label class="lbl">Size (KB)</label>
+        <input type="number" class="inp" id="inp-size" value="128" min="1"/>
+      </div>
+      <button class="btn btn-primary" onclick="allocProcess()" style="justify-content:center;">+ Allocate Process</button>
+    </div>
+    <hr class="divider" style="margin:12px 0;"/>
+    <p class="sb-label">Actions</p>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <button class="btn btn-amber" onclick="startCompaction()" style="justify-content:center;" id="compact-btn">⊞ Compact Memory</button>
+      <button class="btn btn-danger" onclick="deallocAll()" style="justify-content:center;">✕ Deallocate All</button>
+    </div>
+  </div>
+
+  <!-- Address Translation (shown for contiguous + paging) -->
+  <div class="sb-section" id="sb-trans">
+    <p class="sb-label">Address Translation</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div>
+        <label class="lbl">Logical Address (KB)</label>
+        <input type="number" class="inp" id="inp-logical" value="200" min="0"/>
+      </div>
+      <div>
+        <label class="lbl">Relocation Register</label>
+        <input type="number" class="inp" id="inp-reloc" value="0" min="0"/>
+      </div>
+      <button class="btn btn-secondary" onclick="translateAddr()" style="justify-content:center;">→ Translate</button>
+    </div>
+  </div>
+
+  <!-- Page Replacement Config -->
+  <div class="sb-section" id="sb-pr" style="display:none;">
+    <p class="sb-label">Page Replacement Setup</p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div>
+        <label class="lbl">Number of Frames</label>
+        <input type="number" class="inp" id="pr-nframes" value="3" min="1" max="10"/>
+      </div>
+      <div>
+        <label class="lbl">Reference String (comma / space)</label>
+        <input type="text" class="inp" id="pr-refstr" value="7,0,1,2,0,3,0,4,2,3"/>
+      </div>
+      <div class="algo-tabs" id="pr-tabs">
+        <div class="algo-tab active" data-val="fifo"    onclick="setPrAlgo(this)">FIFO</div>
+        <div class="algo-tab"        data-val="optimal" onclick="setPrAlgo(this)">OPT</div>
+        <div class="algo-tab"        data-val="lru"     onclick="setPrAlgo(this)">LRU</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-primary" onclick="runPR()" style="flex:1; justify-content:center;">▶ Run</button>
+        <button class="btn btn-secondary" onclick="prStep()" style="flex:1; justify-content:center;">▸ Step</button>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="resetPR()" style="justify-content:center;">Reset PR</button>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ================================================================
+     MAIN CONTENT
+================================================================ -->
+<main id="content">
+
+  <!-- ============================================================
+       MODULE 1: CONTIGUOUS MEMORY ALLOCATION
+  ============================================================ -->
+  <section id="mod-contiguous" class="module-section active fade-in">
+
+    <!-- Title -->
+    <div>
+      <h2 style="font-size:20px;">🧱 Contiguous Memory Allocation</h2>
+      <p style="color:var(--text2); font-size:13px; margin-top:4px;">Dynamic partitioning with First/Best/Worst Fit. Click a block to deallocate.</p>
+    </div>
+
+    <!-- Live Stats Row -->
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px;">
+      <div class="stat-pill">
+        <div class="stat-val" id="st-util">0%</div>
+        <div class="stat-lbl">Utilization</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="st-free" style="color:var(--green);">1024<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Free Memory</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="st-holes" style="color:var(--amber);">1</div>
+        <div class="stat-lbl">Free Holes</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="st-extfrag" style="color:var(--red);">0<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Ext. Fragmentation</div>
+      </div>
+    </div>
+
+    <!-- Memory Bar -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Physical Memory (RAM)</h2>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-blue" id="mem-range">0 — 1024 KB</span>
+          <span id="compact-step-info" class="step-indicator" style="display:none;">
+            <span class="step-dot"></span>
+            Compaction in progress…
+          </span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="mem-bar"></div>
+        <div id="mem-ruler"></div>
+        <!-- Legend -->
+        <div style="display:flex; gap:16px; margin-top:10px; font-size:11px; color:var(--text2);">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="width:12px;height:12px;border-radius:2px;background:var(--c0);"></div> Allocated
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="width:12px;height:12px;border-radius:2px;background:repeating-linear-gradient(-45deg,#f0ede8 0,#f0ede8 3px,#e8e4dc 3px,#e8e4dc 6px);border:1px solid var(--border2);"></div> Free (Hole)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compaction Step-through panel (hidden until compact pressed) -->
+    <div id="compact-panel" class="card" style="display:none;">
+      <div class="card-header">
+        <h2>⊞ Compaction Steps</h2>
+        <div style="display:flex;gap:8px; align-items:center;">
+          <span id="compact-step-num" class="step-indicator"><span class="step-dot"></span>Step 1 / 1</span>
+          <button class="btn btn-secondary btn-sm" onclick="prevCompactStep()" id="compact-prev">← Prev</button>
+          <button class="btn btn-primary btn-sm"  onclick="nextCompactStep()" id="compact-next">Next →</button>
+          <button class="btn btn-danger btn-sm"   onclick="finishCompaction()" id="compact-finish">✓ Apply</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="compact-bar" style="height:56px; display:flex; border-radius:7px; overflow:hidden; border:1px solid var(--border2);"></div>
+        <p id="compact-desc" style="margin-top:10px; font-size:12px; color:var(--text2); font-style:italic;"></p>
+      </div>
+    </div>
+
+    <!-- Address Translation Result (contiguous) -->
+    <div id="cont-trans-result" class="card" style="display:none;">
+      <div class="card-header"><h2>Logical → Physical Address (Contiguous)</h2></div>
+      <div class="card-body">
+        <div id="cont-trans-body" class="addr-block"></div>
+      </div>
+    </div>
+
+    <!-- Process Table + Swap Queue -->
+    <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:16px;">
+
+      <!-- Active Processes -->
+      <div class="card">
+        <div class="card-header"><h2>Active Processes</h2></div>
+        <div style="overflow:auto; max-height:260px;">
+          <table class="proc-table">
+            <thead>
+              <tr><th>PID</th><th>Size</th><th>Start</th><th>End</th><th>Frames</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="proc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Swap Queue -->
+      <div class="card">
+        <div class="card-header">
+          <h2>💾 Swap Queue (Disk)</h2>
+          <span class="badge badge-amber" id="swap-count">0 processes</span>
+        </div>
+        <div class="card-body" id="swap-list" style="max-height:220px; overflow-y:auto;">
+          <p style="color:var(--text3); font-size:12px; text-align:center; padding:20px 0;">No swapped processes</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- System Log -->
+    <div class="card">
+      <div class="card-header"><h2>System Log</h2></div>
+      <div class="card-body">
+        <div class="log-box" id="sys-log">
+          <div class="log-sys">[SYS] MMU Simulator ready. Memory: 1024 KB, Frame size: 64 KB.</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================================
+       MODULE 2: PAGING & ADDRESS TRANSLATION
+  ============================================================ -->
+  <section id="mod-paging" class="module-section fade-in">
+
+    <div>
+      <h2 style="font-size:20px;">📄 Paging &amp; Address Translation</h2>
+      <p style="color:var(--text2); font-size:13px; margin-top:4px;">Physical memory divided into fixed-size frames. Logical address broken into Page# and Offset.</p>
+    </div>
+
+    <!-- Address Translation Visualizer -->
+    <div class="card">
+      <div class="card-header"><h2>Address Translation Visualizer</h2></div>
+      <div class="card-body" id="paging-trans-body">
+        <p style="color:var(--text3); font-size:13px;">Use the <strong>Address Translation</strong> panel in the sidebar to translate a logical address.</p>
+      </div>
+    </div>
+
+    <!-- Frames + Page Table side by side -->
+    <div style="display:grid; grid-template-columns:1.6fr 1fr; gap:16px;">
+
+      <!-- Physical Frames -->
+      <div class="card">
+        <div class="card-header">
+          <h2>Physical Frames</h2>
+          <span class="badge badge-blue" id="frame-count-badge">0 / 0 used</span>
+        </div>
+        <div class="card-body">
+          <div id="frame-grid" class="frame-grid"></div>
+        </div>
+      </div>
+
+      <!-- Page Table -->
+      <div class="card">
+        <div class="card-header"><h2>Page Table</h2></div>
+        <div class="card-body" style="max-height:360px; overflow-y:auto;" id="page-table-container">
+          <p style="color:var(--text3); font-size:12px;">Allocate processes to populate the page table.</p>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ============================================================
+       MODULE 3: PAGE REPLACEMENT
+  ============================================================ -->
+  <section id="mod-replacement" class="module-section fade-in">
+
+    <div>
+      <h2 style="font-size:20px;">🔄 Page Replacement Algorithms</h2>
+      <p style="color:var(--text2); font-size:13px; margin-top:4px;">Simulate FIFO, Optimal, and LRU. Configure in the sidebar panel.</p>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:10px;">
+      <div class="stat-pill">
+        <div class="stat-val" id="pr-algo-lbl" style="font-size:16px; color:var(--accent);">FIFO</div>
+        <div class="stat-lbl">Algorithm</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="pr-faults" style="color:var(--red);">0</div>
+        <div class="stat-lbl">Page Faults</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="pr-hits" style="color:var(--green);">0</div>
+        <div class="stat-lbl">Page Hits</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="pr-hitrate" style="color:var(--amber);">—</div>
+        <div class="stat-lbl">Hit Rate</div>
+      </div>
+    </div>
+
+    <!-- Reference String display -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Reference String</h2>
+        <span id="pr-step-info" class="step-indicator" style="display:none;"><span class="step-dot"></span><span id="pr-step-txt">0 / 0</span></span>
+      </div>
+      <div class="card-body">
+        <div id="pr-refstr-display" style="display:flex; flex-wrap:wrap; gap:4px; min-height:32px;">
+          <p style="color:var(--text3); font-size:12px;">Run or step through the simulation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation Grid -->
+    <div class="card">
+      <div class="card-header"><h2>Frame State at Each Step</h2></div>
+      <div class="card-body" style="overflow-x:auto;">
+        <div id="pr-sim-grid" style="min-height:80px;">
+          <p style="color:var(--text3); font-size:12px;">Configure settings in the sidebar and press Run or Step.</p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============================================================
+       MODULE 4: ANALYTICS
+  ============================================================ -->
+  <section id="mod-analytics" class="module-section fade-in">
+
+    <div>
+      <h2 style="font-size:20px;">📊 Analytics &amp; Reports</h2>
+      <p style="color:var(--text2); font-size:13px; margin-top:4px;">Real-time memory stats and per-session algorithm comparison log.</p>
+    </div>
+
+    <!-- Memory Breakdown -->
+    <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:12px;">
+      <div class="stat-pill">
+        <div class="stat-val" id="an-total">1024<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Total Memory</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="an-used" style="color:var(--accent);">0<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Used Memory</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="an-free" style="color:var(--green);">1024<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Free Memory</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="an-int-frag" style="color:var(--amber);">0<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Internal Fragmentation</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="an-ext-frag" style="color:var(--red);">0<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">External Fragmentation</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-val" id="an-largest" style="color:var(--accent);">1024<small style="font-size:12px;">KB</small></div>
+        <div class="stat-lbl">Largest Free Hole</div>
+      </div>
+    </div>
+
+    <!-- Algorithm Comparison Log -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Algorithm Comparison Log</h2>
+        <button class="btn btn-secondary btn-sm" onclick="clearCmpLog()">Clear</button>
+      </div>
+      <div class="card-body" style="overflow:auto; max-height:240px;" id="cmp-log-wrap">
+        <table class="cmp-table" id="cmp-log-table">
+          <thead><tr><th>Time</th><th>Algorithm</th><th>PID</th><th>Size</th><th>Free After</th><th>Holes</th><th>Outcome</th></tr></thead>
+          <tbody id="cmp-log-tbody"><tr><td colspan="7" style="color:var(--text3); text-align:center; padding:16px;">No sessions recorded.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Page Replacement Sessions -->
+    <div class="card">
+      <div class="card-header"><h2>Page Replacement Sessions</h2></div>
+      <div class="card-body" style="overflow:auto; max-height:200px;" id="pr-session-wrap">
+        <table class="cmp-table">
+          <thead><tr><th>Time</th><th>Algorithm</th><th>Frames</th><th>Refs</th><th>Faults</th><th>Hits</th><th>Hit Rate</th></tr></thead>
+          <tbody id="pr-session-tbody"><tr><td colspan="7" style="color:var(--text3); text-align:center; padding:16px;">No sessions.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+</main><!-- /#content -->

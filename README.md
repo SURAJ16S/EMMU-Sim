@@ -1,78 +1,16 @@
-# 🧠 MMU Simulator — Memory Management Unit
+# React + Vite
 
-An interactive, high-fidelity web-based simulator designed to visualize core Operating System Memory Management concepts. This tool is built to assist students and instructors in understanding complex address translation, allocation strategies, and page replacement algorithms.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## 🚀 Key Features
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-### 🧱 Contiguous Memory Allocation
-- **Dynamic Partitioning**: Visualize how processes are allocated using different strategies.
-- **Algorithms**: Support for **First Fit**, **Best Fit**, and **Worst Fit**.
-- **Memory Compaction**: Real-time simulation of memory compaction to eliminate external fragmentation.
-- **Utilization Tracking**: Live stats for total usage, free memory, and fragmentation.
+## React Compiler
 
-### 📄 Paging & Address Translation
-- **Logical → Physical**: Step-by-step breakdown of address translation using Page Numbers and Offsets.
-- **Page Tables**: Dynamic page table generation and frame management visualization.
-- **Bit-level Visualization**: Clear representation of address bits.
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-### 🔄 Page Replacement Algorithms
-- **Simulations**: Interactive simulations of **FIFO (First-In, First-Out)**, **Optimal (OPT)**, and **LRU (Least Recently Used)**.
-- **Reference Strings**: Custom reference string input with step-by-step or automated execution.
-- **Hit/Fault Stats**: Calculation of page faults, hits, and overall hit rate.
+## Expanding the ESLint configuration
 
-### 📊 Analytics & Reports
-- **Real-time Metrics**: Detailed session-based analytics of memory usage and algorithm performance.
-- **Comparison Logs**: System logs for tracking allocation events.
-
----
-
-## 🛠️ Built With
-
-- **HTML5/ES6+**: Core structure and logic.
-- **Tailwind CSS**: Modern, responsive UI styling.
-- **Google Fonts**: Rich typography (DM Sans, DM Mono, Playfair Display).
-- **Heroicons**: Clean, consistent iconography.
-
----
-
-## 🖥️ Getting Started
-
-### Prerequisites
-No special environment is required. All you need is a modern web browser.
-
-### How to Run
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/SURAJ16S/EMMU-Sim.git
-   ```
-2. Open `mmu_simulator_v2.html` in any browser:
-   ```bash
-   # Or if you have live-server installed
-   npm start
-   ```
-
----
-
-## 📝 Usage Guide
-
-1. **Sidebar Navigation**: Switch between Allocation, Paging, Replacement, and Analytics modules.
-2. **System Config**: Adjust total RAM size and frame/page size as per your lab requirements.
-3. **Allocation Panel**: Add processes with PIDs and sizes to see real-time memory mapping.
-4. **Interactive Bar**: Click on any allocated block in the memory bar to manually deallocate it.
-5. **Compaction**: Click 'Compact Memory' when external fragmentation is high.
-
----
-
-## ⚖️ License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-
-## 📬 Contact
-
-**Suraj** - [GitHub](https://github.com/SURAJ16S)
-
-Project Link: [https://github.com/SURAJ16S/EMMU-Sim](https://github.com/SURAJ16S/EMMU-Sim)
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
